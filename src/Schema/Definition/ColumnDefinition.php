@@ -12,6 +12,8 @@ class ColumnDefinition
         public bool $isPrimaryKey,
         public mixed $defaultValue,
         public ?string $onUpdate = null,
+        public bool $isUnique = false,
+        public array $foreignKeys = [],
     ) {}
 
     public function name(): string
@@ -42,5 +44,15 @@ class ColumnDefinition
     public function defaultValue(): mixed
     {
         return $this->defaultValue;
+    }
+
+    public function isUnique(): bool
+    {
+        return $this->isUnique;
+    }
+
+    public function foreignKeys(): array
+    {
+        return $this->foreignKeys;
     }
 }

@@ -23,9 +23,12 @@ class MySqlDriver implements DriverInterface
         $tableNames = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         foreach ($tableNames as $tableName) {
+            $primaryKeys = $this->getPrimaryKeys($tableName);
+            
             $tables[$tableName] = new TableDefinition(
-                $tableName,
-                $this->getColumns($tableName)
+                tableName: $tableName,
+                columns: $this->getColumns($tableName),
+                compositePrimaryKey: count($primaryKeys) > 1 ? $primaryKeys : null
             );
         }
 
@@ -67,9 +70,31 @@ class MySqlDriver implements DriverInterface
                 isNullable: $isNullable,
                 isAutoIncrement: $isAutoIncrement,
                 isPrimaryKey: $isPrimaryKey,
-                defaultValue: $row['COLUMN_DEFAULT']
+                defaultValue: $row['COLUMN_DEFAULT'],
+                onUpdate: null,
+                isUnique: $row['COLUMN_KEY'] === 'UNI',
+                foreignKeys: []
             );
         }
         return $definitions;
+    }
+
+    /**
+     * Get primary key columns for a table.
+     */
+    private function getPrimaryKeys(string $tableName): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT COLUMN_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE table_schema = DATABASE()
+            AND table_name = :table
+            AND CONSTRAINT_NAME = 'PRIMARY'
+            ORDER BY ORDINAL_POSITION
+        ");
+
+        $stmt->execute(['table' => $tableName]);
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 }

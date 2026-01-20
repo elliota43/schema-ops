@@ -6,7 +6,9 @@ use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
 use SchemaOps\Attributes\Column;
+use SchemaOps\Attributes\ForeignKey;
 use SchemaOps\Attributes\Id;
+use SchemaOps\Attributes\Index;
 use SchemaOps\Attributes\PrimaryKey;
 use SchemaOps\Attributes\SoftDeletes;
 use SchemaOps\Attributes\Table;
@@ -79,6 +81,8 @@ class SchemaParser
         $this->addTimestampColumns($reflection, $definition);
         
         $this->handleCompositePrimaryKey($reflection, $definition);
+        
+        $this->parseIndexes($reflection, $definition);
 
         return $definition;
     }
@@ -146,7 +150,10 @@ class SchemaParser
             isNullable: $attribute->nullable,
             isAutoIncrement: $attribute->autoIncrement,
             isPrimaryKey: $attribute->primaryKey,
-            defaultValue: $attribute->default
+            defaultValue: $attribute->default,
+            onUpdate: $attribute->onUpdate,
+            isUnique: $attribute->unique,
+            foreignKeys: $this->parseForeignKeys($property)
         );
     }
 
@@ -171,11 +178,34 @@ class SchemaParser
      */
     protected function resolveSqlType(Column $attribute): string
     {
-        if ($attribute->type === 'varchar' && $attribute->length) {
-            return "varchar({$attribute->length})";
+        $type = $attribute->type;
+        
+        // Handle types with length
+        if (in_array($type, ['varchar', 'char']) && $attribute->length) {
+            $type .= "({$attribute->length})";
+        }
+        
+        // Handle decimal with precision/scale
+        if ($type === 'decimal' && $attribute->precision) {
+            if ($attribute->scale !== null) {
+                $type .= "({$attribute->precision}, {$attribute->scale})";
+            } else {
+                $type .= "({$attribute->precision})";
+            }
+        }
+        
+        // Handle enum with values
+        if ($type === 'enum' && $attribute->values) {
+            $values = array_map(fn($v) => "'{$v}'", $attribute->values);
+            $type .= '(' . implode(', ', $values) . ')';
+        }
+        
+        // Handle unsigned modifier
+        if ($attribute->unsigned && in_array($attribute->type, ['tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint'])) {
+            $type .= ' unsigned';
         }
 
-        return $attribute->type;
+        return $type;
     }
 
     /**
@@ -185,14 +215,21 @@ class SchemaParser
      */
     protected function buildIdColumn(Id $attr): ColumnDefinition
     {
+        $type = $attr->type;
+        if ($attr->unsigned) {
+            $type .= ' unsigned';
+        }
+        
         return new ColumnDefinition(
             name: $attr->name,
-            sqlType: $attr->type,
+            sqlType: $type,
             isNullable: false,
             isAutoIncrement: true,
             isPrimaryKey: true,
             defaultValue: null,
-            onUpdate: null
+            onUpdate: null,
+            isUnique: false,
+            foreignKeys: []
         );
     }
 
@@ -210,7 +247,9 @@ class SchemaParser
             isAutoIncrement: false,
             isPrimaryKey: $attr->primaryKey,
             defaultValue: null,
-            onUpdate: null
+            onUpdate: null,
+            isUnique: false,
+            foreignKeys: []
         );
     }
 
@@ -231,7 +270,9 @@ class SchemaParser
             isAutoIncrement: false,
             isPrimaryKey: false,
             defaultValue: 'CURRENT_TIMESTAMP',
-            onUpdate: null
+            onUpdate: null,
+            isUnique: false,
+            foreignKeys: []
         ));
 
         $definition->addColumn(new ColumnDefinition(
@@ -241,7 +282,9 @@ class SchemaParser
             isAutoIncrement: false,
             isPrimaryKey: false,
             defaultValue: 'CURRENT_TIMESTAMP',
-            onUpdate: 'CURRENT_TIMESTAMP'
+            onUpdate: 'CURRENT_TIMESTAMP',
+            isUnique: false,
+            foreignKeys: []
         ));
     }
 
@@ -263,7 +306,9 @@ class SchemaParser
             isAutoIncrement: false,
             isPrimaryKey: false,
             defaultValue: null,
-            onUpdate: null
+            onUpdate: null,
+            isUnique: false,
+            foreignKeys: []
         ));
     }
 
@@ -280,6 +325,53 @@ class SchemaParser
         
         if ($pkAttr) {
             $definition->compositePrimaryKey = $pkAttr->columns;
+        }
+    }
+
+    /**
+     * Parse foreign key attributes from a property.
+     *
+     * @param ReflectionProperty $property
+     * @return array
+     */
+    protected function parseForeignKeys(ReflectionProperty $property): array
+    {
+        $foreignKeys = [];
+        $attributes = $property->getAttributes(ForeignKey::class);
+
+        foreach ($attributes as $attribute) {
+            $fk = $attribute->newInstance();
+            $foreignKeys[] = [
+                'references' => $fk->references,
+                'onDelete' => $fk->onDelete,
+                'onUpdate' => $fk->onUpdate,
+                'name' => $fk->name,
+            ];
+        }
+
+        return $foreignKeys;
+    }
+
+    /**
+     * Parse index attributes from class.
+     *
+     * @param ReflectionClass $reflection
+     * @param TableDefinition $definition
+     * @return void
+     */
+    protected function parseIndexes(ReflectionClass $reflection, TableDefinition $definition): void
+    {
+        $attributes = $reflection->getAttributes(Index::class);
+
+        foreach ($attributes as $attribute) {
+            $index = $attribute->newInstance();
+            $definition->addIndex([
+                'columns' => $index->columns,
+                'name' => $index->name,
+                'unique' => $index->unique,
+                'type' => $index->type,
+                'length' => $index->length,
+            ]);
         }
     }
 }

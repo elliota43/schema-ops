@@ -11,6 +11,7 @@ class MySqlGrammar
     public function createTable(TableDefinition $table): string
     {
         $lines = [];
+        
         foreach ($table->columns as $column) {
             $lines[] = $this->compileColumn($column);
         }
@@ -19,6 +20,18 @@ class MySqlGrammar
         if (!empty($primaryKeys)) {
             $cols = implode('`, `', $primaryKeys);
             $lines[] = "PRIMARY KEY (`{$cols}`)";
+        }
+
+        foreach ($this->compileUniqueConstraints($table) as $constraint) {
+            $lines[] = $constraint;
+        }
+
+        foreach ($this->compileIndexes($table) as $index) {
+            $lines[] = $index;
+        }
+
+        foreach ($this->compileForeignKeys($table) as $foreignKey) {
+            $lines[] = $foreignKey;
         }
 
         $body = implode(",\n    ", $lines);
@@ -49,9 +62,11 @@ class MySqlGrammar
 
     public function compileColumn(ColumnDefinition $col): string
     {
-        $parts = ["`{$col->name()}`", strtoupper($col->sqlType())];
+        $parts = ["`{$col->name()}`", $this->formatType($col->sqlType())];
 
-        if (!$col->isNullable()) {
+        if ($col->isNullable()) {
+            $parts[] = 'NULL';
+        } else {
             $parts[] = 'NOT NULL';
         }
 
@@ -60,11 +75,34 @@ class MySqlGrammar
         }
 
         if ($col->defaultValue() !== null) {
-            $default = is_string($col->defaultValue()) ? "'{$col->defaultValue()}'" : $col->defaultValue();
+            $default = $this->compileDefaultValue($col->defaultValue());
             $parts[] = "DEFAULT {$default}";
         }
 
+        if ($col->onUpdate !== null) {
+            $parts[] = "ON UPDATE {$col->onUpdate}";
+        }
+
         return implode(' ', $parts);
+    }
+
+    /**
+     * Format the SQL type preserving case and structure.
+     */
+    protected function formatType(string $type): string
+    {
+        // Handle compound types (e.g., "bigint unsigned", "enum('a','b')", "decimal(10,2)")
+        if (preg_match('/^(\w+)(.*)$/i', $type, $matches)) {
+            $baseType = strtoupper($matches[1]);
+            $rest = $matches[2]; // Keep case-sensitive parts like enum values
+            
+            // Uppercase the UNSIGNED keyword if present
+            $rest = str_ireplace(' unsigned', ' UNSIGNED', $rest);
+            
+            return $baseType . $rest;
+        }
+        
+        return strtoupper($type);
     }
 
     private function getPrimaryKeys(TableDefinition $table): array
@@ -81,5 +119,117 @@ class MySqlGrammar
         }
 
         return $pks;
+    }
+
+    /**
+     * Compile unique constraints from columns.
+     */
+    protected function compileUniqueConstraints(TableDefinition $table): array
+    {
+        $constraints = [];
+
+        foreach ($table->columns as $column) {
+            if ($column->isUnique() && !$column->isPrimaryKey()) {
+                $constraints[] = "UNIQUE KEY `{$column->name()}_unique` (`{$column->name()}`)";
+            }
+        }
+
+        return $constraints;
+    }
+
+    /**
+     * Compile indexes from table definition.
+     */
+    protected function compileIndexes(TableDefinition $table): array
+    {
+        $indexes = [];
+
+        foreach ($table->indexes as $index) {
+            $name = $index['name'] ?? $this->generateIndexName($table->tableName, $index['columns']);
+            $columns = implode('`, `', $index['columns']);
+            $type = $index['type'] ? " USING {$index['type']}" : '';
+            
+            if ($index['unique']) {
+                $indexes[] = "UNIQUE KEY `{$name}` (`{$columns}`){$type}";
+            } else {
+                $indexes[] = "KEY `{$name}` (`{$columns}`){$type}";
+            }
+        }
+
+        return $indexes;
+    }
+
+    /**
+     * Compile foreign key constraints.
+     */
+    protected function compileForeignKeys(TableDefinition $table): array
+    {
+        $constraints = [];
+
+        foreach ($table->columns as $column) {
+            foreach ($column->foreignKeys() as $fk) {
+                $name = $fk['name'] ?? $this->generateForeignKeyName($table->tableName, $column->name());
+                
+                [$refTable, $refColumn] = $this->parseReference($fk['references']);
+                
+                $constraint = "CONSTRAINT `{$name}` FOREIGN KEY (`{$column->name()}`) REFERENCES `{$refTable}` (`{$refColumn}`)";
+                
+                if ($fk['onDelete']) {
+                    $constraint .= " ON DELETE {$fk['onDelete']}";
+                }
+                
+                if ($fk['onUpdate']) {
+                    $constraint .= " ON UPDATE {$fk['onUpdate']}";
+                }
+                
+                $constraints[] = $constraint;
+            }
+        }
+
+        return $constraints;
+    }
+
+    /**
+     * Generate automatic index name.
+     */
+    protected function generateIndexName(string $table, array $columns): string
+    {
+        return $table . '_' . implode('_', $columns) . '_index';
+    }
+
+    /**
+     * Generate automatic foreign key constraint name.
+     */
+    protected function generateForeignKeyName(string $table, string $column): string
+    {
+        return $table . '_' . $column . '_foreign';
+    }
+
+    /**
+     * Parse foreign key reference string.
+     */
+    protected function parseReference(string $reference): array
+    {
+        if (str_contains($reference, '.')) {
+            return explode('.', $reference, 2);
+        }
+
+        throw new \InvalidArgumentException("Foreign key reference must be in format 'table.column'");
+    }
+
+    /**
+     * Compile default value for column.
+     */
+    protected function compileDefaultValue(mixed $value): string
+    {
+        if (is_string($value) && strtoupper($value) === 'CURRENT_TIMESTAMP') {
+            return 'CURRENT_TIMESTAMP';
+        }
+
+        if (is_string($value)) {
+            return "'{$value}'";
+        }
+
+        return (string) $value;
     }
 }

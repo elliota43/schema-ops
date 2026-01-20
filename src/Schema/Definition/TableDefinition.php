@@ -12,6 +12,7 @@ class TableDefinition {
         public string $tableName,
         public array $columns = [],
         public ?array $compositePrimaryKey = null,
+        public array $indexes = [],
     ) {}
 
     public function addColumn(ColumnDefinition $column): void
@@ -50,5 +51,10 @@ class TableDefinition {
     public function columns(): array
     {
         return $this->columns;
+    }
+
+    public function addIndex(array $index): void
+    {
+        $this->indexes[] = $index;
     }
 }
