@@ -1,6 +1,6 @@
 <?php
 
-namespace SchemaOps\Discovery;
+namespace SchemaOps\Discovery\Discovery;
 
 class ClassFinder
 {

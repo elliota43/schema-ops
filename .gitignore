@@ -6,3 +6,5 @@ test_parser.php
 
 vendor/
 .idea/
+
+.phpunit.result.cache

@@ -15,6 +15,6 @@ class TableDefinition {
 
     public function addColumn(ColumnDefinition $column): void
     {
-        $this->columns[$column->name] = $column;
+        $this->columns[$column->name()] = $column;
     }
 }

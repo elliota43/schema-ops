@@ -1,0 +1,90 @@
+Project: SchemaOps (Declarative SQL Schema Engine)
+Concept: A "Infrastructure-as-Code" tool for SQL databases. Instead of writing imperative migrations (up()/down()), you define your schema in strictly typed PHP classes. The engine calculates the difference between your code, your lockfile, and your live database to generate the exact SQL needed to sync them.
+
+Core Philosophy:
+
+Declarative: You define the end state, not the steps to get there.
+
+Drift-Proof: We trust the database's information_schema as the ultimate source of truth, but verify it against a git-tracked lockfile.
+
+Framework Agnostic: Pure PHP, capable of running in Laravel, Symfony, or standalone scripts.
+
+1. The Architecture: "The Triangulation Model"
+We use a three-way comparison to ensure safety and consistency.
+
+State A (The Code): The "Desired State" defined in your PHP classes (src/Domain/User.php).
+
+State B (The Lockfile): The "Agreed State" that was last deployed (schema.lock).
+
+State C (The Database): The "Actual State" currently running in MySQL (information_schema).
+
+The Workflow
+Drift Check (Safety): Compare Lockfile vs. Database.
+
+Mismatch? -> HALT. The database was modified manually. Warn the user.
+
+Plan Calculation (Logic): Compare Code vs. Lockfile.
+
+Diff? -> Generate ALTER TABLE SQL to bring the Lockfile (and DB) in sync with the Code.
+
+Apply (Execution): Run the SQL and update schema.lock.
+
+2. Component Breakdown
+A. The Definition Layer (Syntax)
+Location: src/Attribute/
+
+Role: The "DSL" (Domain Specific Language) used by developers.
+
+Components: #[Table], #[Column], #[Index], #[RenamedFrom].
+
+Goal: Decouple the user's syntax from the internal logic.
+
+B. The Discovery Engine (Scanner)
+Location: src/Discovery/
+
+Role: Finding schema files efficiently.
+
+Strategy: "Tokenization First." We scan directories and check file contents for the string #[Table] before loading the file into PHP memory. This prevents crashing the app on broken files and improves performance.
+
+C. The Parser (Compiler Frontend)
+Location: src/Parser/
+
+Role: Converting PHP Classes into "Intermediate Representation" (IR).
+
+Output: TableDefinition objects (Generic objects that don't care about MySQL vs Postgres).
+
+D. The State Manager (Persistence)
+Location: src/State/
+
+Role: Handling the schema.lock JSON file.
+
+Logic: Serializes TableDefinition objects to JSON and hydrates them back. This allows Git to track schema changes.
+
+E. The Introspection Layer (The "Live" Driver)
+Location: src/Database/
+
+Role: Reverse-engineering the live database.
+
+Logic: Queries information_schema to build TableDefinition objects that represent the real world.
+
+Adapter: MySqlDriver (and later PostgresDriver).
+
+F. The Diff Engine (The Brain)
+Location: src/Diff/
+
+Role: Comparing two TableDefinition objects.
+
+Output: A TableDiff object containing:
+
+$addedColumns
+
+$removedColumns
+
+$modifiedColumns
+
+G. The Generator (Compiler Backend)
+Location: src/Generator/
+
+Role: Converting a TableDiff into SQL strings.
+
+Output: ALTER TABLE users ADD COLUMN email...
