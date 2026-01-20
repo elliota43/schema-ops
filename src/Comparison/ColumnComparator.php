@@ -2,16 +2,17 @@
 
 namespace Atlas\Comparison;
 
+use Atlas\Analysis\DestructiveChangeAnalyzerInterface;
+use Atlas\Analysis\DestructivenessLevel;
 use Atlas\Schema\Definition\ColumnDefinition;
 
 class ColumnComparator
 {
     public function __construct(
         protected ColumnDefinition $current,
-        protected ColumnDefinition $desired
-    )
-    {
-    }
+        protected ColumnDefinition $desired,
+        protected ?DestructiveChangeAnalyzerInterface $analyzer = null
+    ) {}
 
     /**
      * Check if there are any changes between the columns.
@@ -129,5 +130,34 @@ class ColumnComparator
         }
 
         return (string) $value;
+    }
+
+    /**
+     * Checks if the change is destructive.
+     *
+     * @return bool
+     */
+    public function isDestructive(): bool
+    {
+        if (! $this->analyzer) {
+            return false;
+        }
+
+        $level = $this->analyzer->analyze($this->current, $this->desired);
+        return $level->isDestructive();
+    }
+
+    /**
+     * Gets DestructivenessLevel
+     *
+     * @return DestructivenessLevel
+     */
+    public function getDestructivenessLevel(): DestructivenessLevel
+    {
+        if (! $this->analyzer) {
+            return DestructivenessLevel::SAFE;
+        }
+
+        return $this->analyzer->analyze($this->current, $this->desired);
     }
 }

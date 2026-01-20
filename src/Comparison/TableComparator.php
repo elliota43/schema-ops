@@ -2,6 +2,7 @@
 
 namespace Atlas\Comparison;
 
+use Atlas\Analysis\DestructiveChangeAnalyzerInterface;
 use Atlas\Attributes\Table;
 use Atlas\Changes\TableChanges;
 use Atlas\Schema\Definition\TableDefinition;
@@ -9,6 +10,10 @@ use Atlas\Schema\Definition\ColumnDefinition;
 
 class TableComparator
 {
+
+    public function __construct(
+        protected ?DestructiveChangeAnalyzerInterface $analyzer = null
+    ) {}
     public function compare(TableDefinition $current, TableDefinition $desired): TableChanges
     {
         $diff = new TableChanges($desired->tableName);
@@ -60,11 +65,13 @@ class TableComparator
 
             $comparator = new ColumnComparator(
                 $current->getColumn($name),
-                $desiredColumn
+                $desiredColumn,
+                $this->analyzer
             );
 
             if ($comparator->hasChanges()) {
-                $diff->modifiedColumns[] = $desiredColumn;
+                $level = $comparator->getDestructivenessLevel();
+                $diff->addModifiedColumn($desiredColumn, $level);
             }
         }
     }
