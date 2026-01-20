@@ -1,10 +1,10 @@
 <?php
 
-namespace SchemaOps\Schema\Grammars;
+namespace Atlas\Schema\Grammars;
 
-use SchemaOps\Changes\TableChanges;
-use SchemaOps\Schema\Definition\ColumnDefinition;
-use SchemaOps\Schema\Definition\TableDefinition;
+use Atlas\Changes\TableChanges;
+use Atlas\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\TableDefinition;
 
 class MySqlGrammar
 {

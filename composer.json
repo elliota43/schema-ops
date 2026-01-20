@@ -1,11 +1,11 @@
 {
-    "name": "elliota43/schema-ops",
-    "description": "Declarative SQL Schema Management for PHP",
+    "name": "elliota43/atlas",
+    "description": "Declarative SQL Schema Management for PHP using Attributes",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "SchemaOps\\": "src/"
+            "Atlas\\": "src/"
         }
     },
     "require": {
@@ -20,5 +20,11 @@
         "psr-4": {
             "Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit tests/Unit/",
+        "test:integration": "phpunit tests/Integration/",
+        "test:coverage": "phpunit --coverage-html coverage/"
     }
 }

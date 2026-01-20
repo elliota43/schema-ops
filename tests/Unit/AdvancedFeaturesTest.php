@@ -4,11 +4,11 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use SchemaOps\Example\OrderItemSchema;
-use SchemaOps\Example\ProductSchema;
-use SchemaOps\Example\UserSchema;
-use SchemaOps\Schema\Grammars\MySqlGrammar;
-use SchemaOps\Schema\Parser\SchemaParser;
+use Atlas\Example\OrderItemSchema;
+use Atlas\Example\ProductSchema;
+use Atlas\Example\UserSchema;
+use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Parser\SchemaParser;
 
 class AdvancedFeaturesTest extends TestCase
 {

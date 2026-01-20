@@ -1,8 +1,8 @@
 <?php
 
-namespace SchemaOps\Changes;
+namespace Atlas\Changes;
 
-use SchemaOps\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\ColumnDefinition;
 
 class TableChanges
 {

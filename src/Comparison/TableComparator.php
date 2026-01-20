@@ -1,11 +1,11 @@
 <?php
 
-namespace SchemaOps\Comparison;
+namespace Atlas\Comparison;
 
-use SchemaOps\Attributes\Table;
-use SchemaOps\Changes\TableChanges;
-use SchemaOps\Schema\Definition\TableDefinition;
-use SchemaOps\Schema\Definition\ColumnDefinition;
+use Atlas\Attributes\Table;
+use Atlas\Changes\TableChanges;
+use Atlas\Schema\Definition\TableDefinition;
+use Atlas\Schema\Definition\ColumnDefinition;
 
 class TableComparator
 {

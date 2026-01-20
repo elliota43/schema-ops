@@ -1,8 +1,8 @@
 <?php
 
-namespace SchemaOps\Comparison;
+namespace Atlas\Comparison;
 
-use SchemaOps\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\ColumnDefinition;
 
 class ColumnComparator
 {

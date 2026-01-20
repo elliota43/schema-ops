@@ -1,6 +1,6 @@
 <?php
 
-namespace SchemaOps\Console\Commands;
+namespace Atlas\Console\Commands;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,7 +16,7 @@ class StatusCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('<info>SchemaOps Status</info>');
+        $output->writeln('<info>Atlas Status</info>');
         $output->writeln('Version: 0.1.0');
         $output->writeln('');
 

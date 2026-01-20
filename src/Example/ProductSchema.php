@@ -1,12 +1,12 @@
 <?php
 
-namespace SchemaOps\Example;
+namespace Atlas\Example;
 
-use SchemaOps\Attributes\Column;
-use SchemaOps\Attributes\SoftDeletes;
-use SchemaOps\Attributes\Table;
-use SchemaOps\Attributes\Timestamps;
-use SchemaOps\Attributes\Uuid;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\SoftDeletes;
+use Atlas\Attributes\Table;
+use Atlas\Attributes\Timestamps;
+use Atlas\Attributes\Uuid;
 
 #[Table(name: 'products')]
 #[Uuid]

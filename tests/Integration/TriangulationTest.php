@@ -5,12 +5,12 @@ namespace Tests\Integration;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use SchemaOps\Attributes\Column;
-use SchemaOps\Attributes\Table;
-use SchemaOps\Comparison\TableComparator;
-use SchemaOps\Database\Drivers\MySqlDriver;
-use SchemaOps\Schema\Grammars\MySqlGrammar;
-use SchemaOps\Schema\Parser\SchemaParser;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\Table;
+use Atlas\Comparison\TableComparator;
+use Atlas\Database\Drivers\MySqlDriver;
+use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Parser\SchemaParser;
 
 // Fixture: This matches the Docker DB 'legacy_users' table BUT has one extra column
 #[Table(name: 'legacy_users')]

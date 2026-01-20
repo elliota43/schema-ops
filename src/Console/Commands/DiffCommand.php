@@ -1,15 +1,15 @@
 <?php
 
-namespace SchemaOps\Console\Commands;
+namespace Atlas\Console\Commands;
 
 use PDO;
 use PDOException;
-use SchemaOps\Changes\TableChanges;
-use SchemaOps\Comparison\TableComparator;
-use SchemaOps\Database\Drivers\MySqlDriver;
-use SchemaOps\Schema\Definition\TableDefinition;
-use SchemaOps\Schema\Discovery\ClassFinder;
-use SchemaOps\Schema\Parser\SchemaParser;
+use Atlas\Changes\TableChanges;
+use Atlas\Comparison\TableComparator;
+use Atlas\Database\Drivers\MySqlDriver;
+use Atlas\Schema\Definition\TableDefinition;
+use Atlas\Schema\Discovery\ClassFinder;
+use Atlas\Schema\Parser\SchemaParser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;

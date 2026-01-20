@@ -4,14 +4,14 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use SchemaOps\Example\OrderItemSchema;
-use SchemaOps\Example\OrderSchema;
-use SchemaOps\Example\ProductSchema;
-use SchemaOps\Example\RoleSchema;
-use SchemaOps\Example\UserRoleSchema;
-use SchemaOps\Example\UserSchema;
-use SchemaOps\Schema\Grammars\MySqlGrammar;
-use SchemaOps\Schema\Parser\SchemaParser;
+use Atlas\Example\OrderItemSchema;
+use Atlas\Example\OrderSchema;
+use Atlas\Example\ProductSchema;
+use Atlas\Example\RoleSchema;
+use Atlas\Example\UserRoleSchema;
+use Atlas\Example\UserSchema;
+use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Parser\SchemaParser;
 
 class ComplexSchemaTest extends TestCase
 {

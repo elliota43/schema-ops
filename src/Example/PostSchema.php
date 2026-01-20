@@ -1,14 +1,14 @@
 <?php
 
-namespace SchemaOps\Example;
+namespace Atlas\Example;
 
-use SchemaOps\Attributes\Column;
-use SchemaOps\Attributes\ForeignKey;
-use SchemaOps\Attributes\Id;
-use SchemaOps\Attributes\Index;
-use SchemaOps\Attributes\SoftDeletes;
-use SchemaOps\Attributes\Table;
-use SchemaOps\Attributes\Timestamps;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\ForeignKey;
+use Atlas\Attributes\Id;
+use Atlas\Attributes\Index;
+use Atlas\Attributes\SoftDeletes;
+use Atlas\Attributes\Table;
+use Atlas\Attributes\Timestamps;
 
 #[Table(name: 'posts')]
 #[Id]

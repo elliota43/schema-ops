@@ -1,11 +1,11 @@
 <?php
 
-namespace SchemaOps\Example;
+namespace Atlas\Example;
 
-use SchemaOps\Attributes\Column;
-use SchemaOps\Attributes\PrimaryKey;
-use SchemaOps\Attributes\Table;
-use SchemaOps\Attributes\Timestamps;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\PrimaryKey;
+use Atlas\Attributes\Table;
+use Atlas\Attributes\Timestamps;
 
 #[Table(name: 'order_items')]
 #[PrimaryKey(columns: ['order_id', 'product_id'])]

@@ -1,10 +1,10 @@
 <?php
 
-namespace SchemaOps\Database\Drivers;
+namespace Atlas\Database\Drivers;
 
 use PDO;
-use SchemaOps\Schema\Definition\ColumnDefinition;
-use SchemaOps\Schema\Definition\TableDefinition;
+use Atlas\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\TableDefinition;
 
 class MySqlDriver implements DriverInterface
 {

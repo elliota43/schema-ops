@@ -1,21 +1,21 @@
 <?php
 
-namespace SchemaOps\Schema\Parser;
+namespace Atlas\Schema\Parser;
 
 use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
-use SchemaOps\Attributes\Column;
-use SchemaOps\Attributes\ForeignKey;
-use SchemaOps\Attributes\Id;
-use SchemaOps\Attributes\Index;
-use SchemaOps\Attributes\PrimaryKey;
-use SchemaOps\Attributes\SoftDeletes;
-use SchemaOps\Attributes\Table;
-use SchemaOps\Attributes\Timestamps;
-use SchemaOps\Attributes\Uuid;
-use SchemaOps\Schema\Definition\ColumnDefinition;
-use SchemaOps\Schema\Definition\TableDefinition;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\ForeignKey;
+use Atlas\Attributes\Id;
+use Atlas\Attributes\Index;
+use Atlas\Attributes\PrimaryKey;
+use Atlas\Attributes\SoftDeletes;
+use Atlas\Attributes\Table;
+use Atlas\Attributes\Timestamps;
+use Atlas\Attributes\Uuid;
+use Atlas\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\TableDefinition;
 
 class SchemaParser
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace SchemaOps\Attributes;
+namespace Atlas\Attributes;
 
 use Attribute;
 

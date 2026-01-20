@@ -1,6 +1,6 @@
 <?php
 
-namespace SchemaOps\Schema\Discovery;
+namespace Atlas\Schema\Discovery;
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

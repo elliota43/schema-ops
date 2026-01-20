@@ -4,9 +4,9 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use SchemaOps\Comparison\TableComparator;
-use SchemaOps\Schema\Definition\ColumnDefinition;
-use SchemaOps\Schema\Definition\TableDefinition;
+use Atlas\Comparison\TableComparator;
+use Atlas\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\TableDefinition;
 
 class ComparatorTest extends TestCase
 {

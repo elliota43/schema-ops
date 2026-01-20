@@ -1,9 +1,9 @@
 <?php
 
-namespace SchemaOps\State;
+namespace Atlas\State;
 
-use SchemaOps\Schema\Definition\ColumnDefinition;
-use SchemaOps\Schema\Definition\TableDefinition;
+use Atlas\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\TableDefinition;
 
 class LockfileManager
 {

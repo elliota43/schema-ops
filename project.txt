@@ -1,4 +1,4 @@
-Project: SchemaOps (Declarative SQL Schema Engine)
+Project: Atlas (Declarative SQL Schema Engine)
 Concept: A "Infrastructure-as-Code" tool for SQL databases. Instead of writing imperative migrations (up()/down()), you define your schema in strictly typed PHP classes. The engine calculates the difference between your code, your lockfile, and your live database to generate the exact SQL needed to sync them.
 
 Core Philosophy:

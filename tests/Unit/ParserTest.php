@@ -4,10 +4,10 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use SchemaOps\Attributes\Column;
-use SchemaOps\Attributes\Table;
-use SchemaOps\Schema\Grammars\MySqlGrammar;
-use SchemaOps\Schema\Parser\SchemaParser;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\Table;
+use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Parser\SchemaParser;
 
 // Fixture Class for Testing
 #[Table(name: 'users')]

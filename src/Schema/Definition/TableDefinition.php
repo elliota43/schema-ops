@@ -1,6 +1,6 @@
 <?php
 
-namespace SchemaOps\Schema\Definition;
+namespace Atlas\Schema\Definition;
 
 class TableDefinition {
 

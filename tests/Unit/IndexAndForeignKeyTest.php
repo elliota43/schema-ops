@@ -4,9 +4,9 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use SchemaOps\Example\PostSchema;
-use SchemaOps\Schema\Grammars\MySqlGrammar;
-use SchemaOps\Schema\Parser\SchemaParser;
+use Atlas\Example\PostSchema;
+use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Parser\SchemaParser;
 
 class IndexAndForeignKeyTest extends TestCase
 {

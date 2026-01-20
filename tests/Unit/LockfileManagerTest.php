@@ -4,9 +4,9 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use SchemaOps\Schema\Definition\ColumnDefinition;
-use SchemaOps\Schema\Definition\TableDefinition;
-use SchemaOps\State\LockfileManager;
+use Atlas\Schema\Definition\ColumnDefinition;
+use Atlas\Schema\Definition\TableDefinition;
+use Atlas\State\LockfileManager;
 
 class LockfileManagerTest extends TestCase
 {
@@ -15,7 +15,7 @@ class LockfileManagerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tempDir = sys_get_temp_dir() . '/schemaops_test_' . uniqid();
+        $this->tempDir = sys_get_temp_dir() . '/atlas_test_' . uniqid();
         mkdir($this->tempDir);
         $this->manager = new LockfileManager($this->tempDir);
     }
