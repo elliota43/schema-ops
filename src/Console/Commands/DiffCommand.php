@@ -24,7 +24,7 @@ class DiffCommand extends Command
         $this
             ->setName('schema:diff')
             ->setDescription('Show differences between your attribute-based schema and database.')
-            ->addArgument('path', InputArgument::OPTIONAL, 'Path to scan for schema classes', 'tests/Integration')
+            ->addArgument('path', InputArgument::OPTIONAL, 'Path to scan for schema classes', 'src/Example')
             ->addOption('host', null, InputOption::VALUE_REQUIRED, 'Database host', getenv('DB_HOST') ?: '127.0.0.1')
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'Database port', getenv('DB_PORT') ?: '3306')
             ->addOption('database', 'd', InputOption::VALUE_REQUIRED, 'Database name', getenv('DB_DATABASE') ?: 'test_schema')

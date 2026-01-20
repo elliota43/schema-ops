@@ -31,7 +31,7 @@ class SchemaParser
     {
         if (! class_exists($className)) {
             throw new RuntimeException(
-                "Class '${className}' not found. Make sure it's loaded or autoloadable."
+                "Class '{$className}' not found. Make sure it's loaded or autoloadable."
             );
         }
 
