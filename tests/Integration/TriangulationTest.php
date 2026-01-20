@@ -2,6 +2,7 @@
 
 namespace Tests\Integration;
 
+use Atlas\Database\Drivers\MySqlTypeNormalizer;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -62,7 +63,7 @@ class TriangulationTest extends TestCase
         $stateA = $currentSchema['legacy_users'];
 
         // 2. Parse PHP Class (State B)
-        $parser = new SchemaParser();
+        $parser = new SchemaParser(new MySqlTypeNormalizer());
         $stateB = $parser->parse(TriangulationTarget::class);
 
         // 3. Compare

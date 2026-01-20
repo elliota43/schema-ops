@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Atlas\Database\Drivers\MySqlTypeNormalizer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Atlas\Attributes\Column;
@@ -26,7 +27,7 @@ class ParserTest extends TestCase
     #[Test]
     public function TestParsesPHPAttributesIntoDefinition(): void
     {
-        $parser = new SchemaParser();
+        $parser = new SchemaParser(new MySqlTypeNormalizer());
         $def = $parser->parse(TestUserSchema::class);
 
         $this->assertEquals('users', $def->tableName);
@@ -43,14 +44,14 @@ class ParserTest extends TestCase
     #[Test]
     public function TestGeneratesCreateTableSql(): void
     {
-        $parser = new SchemaParser();
+        $parser = new SchemaParser(new MySqlTypeNormalizer());
         $def = $parser->parse(TestUserSchema::class);
 
         $grammar = new MySqlGrammar();
         $sql = $grammar->createTable($def);
 
         $this->assertStringContainsString('CREATE TABLE `users`', $sql);
-        $this->assertStringContainsString('`id` INTEGER NOT NULL AUTO_INCREMENT', $sql);
+        $this->assertStringContainsString('`id` INT NOT NULL AUTO_INCREMENT', $sql);
         $this->assertStringContainsString('PRIMARY KEY (`id`)', $sql);
     }
 }

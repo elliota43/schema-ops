@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Atlas\Database\Drivers\MySqlTypeNormalizer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Atlas\Example\PostSchema;
@@ -15,7 +16,7 @@ class IndexAndForeignKeyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->parser = new SchemaParser();
+        $this->parser = new SchemaParser(new MySqlTypeNormalizer());
         $this->grammar = new MySqlGrammar();
     }
 

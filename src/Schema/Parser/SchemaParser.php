@@ -2,6 +2,7 @@
 
 namespace Atlas\Schema\Parser;
 
+use Atlas\Database\TypeNormalizerInterface;
 use ReflectionClass;
 use ReflectionProperty;
 use RuntimeException;
@@ -19,6 +20,11 @@ use Atlas\Schema\Definition\TableDefinition;
 
 class SchemaParser
 {
+
+    public function __construct(
+        private TypeNormalizerInterface $normalizer
+    ) {}
+
     /**
      * Parse a class into a table definition.
      */
@@ -178,7 +184,7 @@ class SchemaParser
      */
     protected function resolveSqlType(Column $attribute): string
     {
-        $type = $attribute->type;
+        $type = strtolower(trim($attribute->type));
         
         // Handle types with length
         if (in_array($type, ['varchar', 'char']) && $attribute->length) {
@@ -205,7 +211,7 @@ class SchemaParser
             $type .= ' unsigned';
         }
 
-        return $type;
+        return $this->normalizer->normalize($type);
     }
 
     /**
@@ -222,7 +228,7 @@ class SchemaParser
         
         return new ColumnDefinition(
             name: $attr->name,
-            sqlType: $type,
+            sqlType: $this->normalizer->normalize($type),
             isNullable: false,
             isAutoIncrement: true,
             isPrimaryKey: true,
@@ -242,7 +248,7 @@ class SchemaParser
     {
         return new ColumnDefinition(
             name: $attr->name,
-            sqlType: 'char(36)',
+            sqlType: $this->normalizer->normalize('char(36)'),
             isNullable: false,
             isAutoIncrement: false,
             isPrimaryKey: $attr->primaryKey,
@@ -265,7 +271,7 @@ class SchemaParser
     {
         $definition->addColumn(new ColumnDefinition(
             name: $attr->createdAtColumn,
-            sqlType: 'timestamp',
+            sqlType: $this->normalizer->normalize('timestamp'),
             isNullable: $attr->nullable,
             isAutoIncrement: false,
             isPrimaryKey: false,
@@ -277,7 +283,7 @@ class SchemaParser
 
         $definition->addColumn(new ColumnDefinition(
             name: $attr->updatedAtColumn,
-            sqlType: 'timestamp',
+            sqlType: $this->normalizer->normalize('timestamp'),
             isNullable: $attr->nullable,
             isAutoIncrement: false,
             isPrimaryKey: false,
@@ -301,7 +307,7 @@ class SchemaParser
     {
         $definition->addColumn(new ColumnDefinition(
             name: $attr->column,
-            sqlType: 'timestamp',
+            sqlType: $this->normalizer->normalize('timestamp'),
             isNullable: true,
             isAutoIncrement: false,
             isPrimaryKey: false,

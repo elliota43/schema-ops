@@ -2,6 +2,7 @@
 
 namespace Tests\Integration;
 
+use Atlas\Database\Drivers\MySqlTypeNormalizer;
 use PDO;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -29,7 +30,7 @@ class ComplexSchemaIntegrationTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $this->driver = new MySqlDriver($this->pdo);
-        $this->parser = new SchemaParser();
+        $this->parser = new SchemaParser(new MySqlTypeNormalizer());
         $this->grammar = new MySqlGrammar();
     }
 

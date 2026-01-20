@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Atlas\Database\Drivers\MySqlTypeNormalizer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Atlas\Example\OrderItemSchema;
@@ -17,7 +18,7 @@ class AdvancedFeaturesTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->parser = new SchemaParser();
+        $this->parser = new SchemaParser(new MySqlTypeNormalizer());
         $this->grammar = new MySqlGrammar();
     }
 
@@ -79,7 +80,7 @@ class AdvancedFeaturesTest extends TestCase
         $productSql = $this->grammar->createTable($productDef);
 
         $this->assertStringContainsString('BIGINT UNSIGNED', $userSql);
-        $this->assertStringContainsString('INTEGER UNSIGNED', $productSql);
+        $this->assertStringContainsString('INT UNSIGNED', $productSql);
     }
 
     #[Test]

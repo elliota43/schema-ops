@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Atlas\Database\Drivers\MySqlTypeNormalizer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Atlas\Example\OrderItemSchema;
@@ -20,7 +21,7 @@ class ComplexSchemaTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->parser = new SchemaParser();
+        $this->parser = new SchemaParser(new MySqlTypeNormalizer());
         $this->grammar = new MySqlGrammar();
     }
 
@@ -143,7 +144,7 @@ class ComplexSchemaTest extends TestCase
         $this->assertStringContainsString('`id` CHAR(36) NOT NULL', $sql);
         $this->assertStringContainsString('`slug` VARCHAR(255) NOT NULL', $sql);
         $this->assertStringContainsString('`price` DECIMAL(10, 2) NOT NULL', $sql);
-        $this->assertStringContainsString('`stock_quantity` INTEGER UNSIGNED NOT NULL DEFAULT 0', $sql);
+        $this->assertStringContainsString('`stock_quantity` INT UNSIGNED NOT NULL DEFAULT 0', $sql);
         $this->assertStringContainsString('`metadata` JSON NULL', $sql);
         $this->assertStringContainsString('PRIMARY KEY (`id`)', $sql);
     }

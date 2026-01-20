@@ -8,7 +8,15 @@ use Atlas\Schema\Definition\TableDefinition;
 
 class MySqlDriver implements DriverInterface
 {
-    public function __construct(private PDO $pdo) {}
+
+    /**
+     * @var MySqlTypeNormalizer
+     */
+    protected MySqlTypeNormalizer $normalizer;
+    public function __construct(private PDO $pdo)
+    {
+        $this->normalizer = new MySqlTypeNormalizer();
+    }
 
     public function getCurrentSchema(): array
     {
@@ -66,7 +74,7 @@ class MySqlDriver implements DriverInterface
 
             $definitions[$name] = new ColumnDefinition(
                 name: $name,
-                sqlType: $row['COLUMN_TYPE'],
+                sqlType: $this->normalizer->normalize($row['COLUMN_TYPE']),
                 isNullable: $isNullable,
                 isAutoIncrement: $isAutoIncrement,
                 isPrimaryKey: $isPrimaryKey,
