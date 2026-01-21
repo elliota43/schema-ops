@@ -13,3 +13,5 @@ AGENTS.md
 
 .claude/
 .vscode/
+
+_coverage/
