@@ -6,38 +6,32 @@ use Atlas\Changes\TableChanges;
 use Atlas\Schema\Definition\ColumnDefinition;
 use Atlas\Schema\Definition\TableDefinition;
 
-class MySqlGrammar implements GrammarInterface
+class SQLiteGrammar implements GrammarInterface
 {
-
-    protected $sqlKeywords = [
-      'NULL',
-      'TRUE',
-      'FALSE',
-      'CURRENT_TIMESTAMP',
-      'CURRENT_DATE',
-      'CURRENT_TIME',
+    protected array $sqlKeywords = [
+        'NULL',
+        'TRUE',
+        'FALSE',
+        'CURRENT_TIMESTAMP',
+        'CURRENT_DATE',
+        'CURRENT_TIME',
     ];
 
     public function createTable(TableDefinition $table): string
     {
         $lines = [];
-        
+
         foreach ($table->columns as $column) {
             $lines[] = $this->compileColumn($column);
         }
 
         $primaryKeys = $this->getPrimaryKeys($table);
-        if (!empty($primaryKeys)) {
-            $cols = implode('`, `', $primaryKeys);
-            $lines[] = "PRIMARY KEY (`{$cols}`)";
+        if (! empty($primaryKeys)) {
+            $lines[] = $this->compilePrimaryKey($primaryKeys);
         }
 
         foreach ($this->compileUniqueConstraints($table) as $constraint) {
             $lines[] = $constraint;
-        }
-
-        foreach ($this->compileIndexes($table) as $index) {
-            $lines[] = $index;
         }
 
         foreach ($this->compileForeignKeys($table) as $foreignKey) {
@@ -46,7 +40,7 @@ class MySqlGrammar implements GrammarInterface
 
         $body = implode(",\n    ", $lines);
 
-        return "CREATE TABLE `{$table->tableName}` (\n    {$body}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+        return "CREATE TABLE {$this->wrap($table->tableName)} (\n    {$body}\n);";
     }
 
     public function generateAlter(TableChanges $diff): array
@@ -73,8 +67,9 @@ class MySqlGrammar implements GrammarInterface
      */
     public function generateAddColumn(string $tableName, ColumnDefinition $column): string
     {
-        $def = $this->compileColumn($column);
-        return "ALTER TABLE `{$tableName}` ADD COLUMN {$def}";
+        $definition = $this->compileColumn($column);
+
+        return "ALTER TABLE {$this->wrap($tableName)} ADD COLUMN {$definition}";
     }
 
     /**
@@ -82,8 +77,9 @@ class MySqlGrammar implements GrammarInterface
      */
     public function generateModifyColumn(string $tableName, ColumnDefinition $column): string
     {
-        $def = $this->compileColumn($column);
-        return "ALTER TABLE `{$tableName}` MODIFY COLUMN {$def}";
+        $type = $this->formatType($column->sqlType());
+
+        return "ALTER TABLE {$this->wrap($tableName)} ALTER COLUMN {$this->wrap($column->name())} TYPE {$type}";
     }
 
     /**
@@ -91,7 +87,7 @@ class MySqlGrammar implements GrammarInterface
      */
     public function generateDropColumn(string $tableName, string $columnName): string
     {
-        return "ALTER TABLE `{$tableName}` DROP COLUMN `{$columnName}`";
+        return "ALTER TABLE {$this->wrap($tableName)} DROP COLUMN {$this->wrap($columnName)}";
     }
 
     /**
@@ -99,7 +95,7 @@ class MySqlGrammar implements GrammarInterface
      */
     public function generatePreviewQuery(string $tableName, string $columnName, int $limit = 10): string
     {
-        return "SELECT `{$columnName}` FROM `{$tableName}` WHERE `{$columnName}` IS NOT NULL LIMIT {$limit}";
+        return "SELECT {$this->wrap($columnName)} FROM {$this->wrap($tableName)} WHERE {$this->wrap($columnName)} IS NOT NULL LIMIT {$limit}";
     }
 
     /**
@@ -107,68 +103,76 @@ class MySqlGrammar implements GrammarInterface
      */
     public function dropTable(string $tableName): string
     {
-        return "DROP TABLE `{$tableName}`";
+        return "DROP TABLE {$this->wrap($tableName)}";
     }
 
-    public function compileColumn(ColumnDefinition $col): string
+    protected function compileColumn(ColumnDefinition $column): string
     {
-        $parts = ["`{$col->name()}`", $this->formatType($col->sqlType())];
+        if ($this->shouldInlinePrimaryKey($column)) {
+            return $this->compileAutoIncrementPrimaryKey($column);
+        }
 
-        if ($col->isNullable()) {
-            $parts[] = 'NULL';
-        } else {
+        $parts = [$this->wrap($column->name()), $this->formatType($column->sqlType())];
+
+        if (! $column->isNullable()) {
             $parts[] = 'NOT NULL';
         }
 
-        if ($col->isAutoIncrement()) {
-            $parts[] = 'AUTO_INCREMENT';
-        }
-
-        if ($col->defaultValue() !== null) {
-            $default = $this->compileDefaultValue($col->defaultValue());
+        if ($column->defaultValue() !== null) {
+            $default = $this->compileDefaultValue($column->defaultValue());
             $parts[] = "DEFAULT {$default}";
-        }
-
-        if ($col->onUpdate !== null) {
-            $parts[] = "ON UPDATE {$col->onUpdate}";
         }
 
         return implode(' ', $parts);
     }
 
-    /**
-     * Format the SQL type preserving case and structure.
-     */
+    protected function shouldInlinePrimaryKey(ColumnDefinition $column): bool
+    {
+        return $column->isPrimaryKey()
+            && $column->isAutoIncrement()
+            && $this->isIntegerType($column->sqlType());
+    }
+
+    protected function compileAutoIncrementPrimaryKey(ColumnDefinition $column): string
+    {
+        return "{$this->wrap($column->name())} INTEGER PRIMARY KEY AUTOINCREMENT";
+    }
+
+    protected function isIntegerType(string $type): bool
+    {
+        return str_contains(strtolower($type), 'int');
+    }
+
     protected function formatType(string $type): string
     {
-        // Handle compound types (e.g., "bigint unsigned", "enum('a','b')", "decimal(10,2)")
-        if (preg_match('/^(\w+)(.*)$/i', $type, $matches)) {
-            $baseType = strtoupper($matches[1]);
-            $rest = $matches[2]; // Keep case-sensitive parts like enum values
-            
-            // Uppercase the UNSIGNED keyword if present
-            $rest = str_ireplace(' unsigned', ' UNSIGNED', $rest);
-            
-            return $baseType . $rest;
-        }
-        
         return strtoupper($type);
     }
 
-    private function getPrimaryKeys(TableDefinition $table): array
+    protected function getPrimaryKeys(TableDefinition $table): array
     {
         if ($table->compositePrimaryKey !== null) {
             return $table->compositePrimaryKey;
         }
-        
+
         $pks = [];
-        foreach ($table->columns as $col) {
-            if ($col->isPrimaryKey()) {
-                $pks[] = $col->name();
+        foreach ($table->columns as $column) {
+            if ($this->shouldInlinePrimaryKey($column)) {
+                continue;
+            }
+
+            if ($column->isPrimaryKey()) {
+                $pks[] = $column->name();
             }
         }
 
         return $pks;
+    }
+
+    protected function compilePrimaryKey(array $columns): string
+    {
+        $cols = implode(', ', array_map([$this, 'wrap'], $columns));
+
+        return "PRIMARY KEY ({$cols})";
     }
 
     /**
@@ -179,34 +183,12 @@ class MySqlGrammar implements GrammarInterface
         $constraints = [];
 
         foreach ($table->columns as $column) {
-            if ($column->isUnique() && !$column->isPrimaryKey()) {
-                $constraints[] = "UNIQUE KEY `{$column->name()}_unique` (`{$column->name()}`)";
+            if ($column->isUnique() && ! $column->isPrimaryKey()) {
+                $constraints[] = "UNIQUE ({$this->wrap($column->name())})";
             }
         }
 
         return $constraints;
-    }
-
-    /**
-     * Compile indexes from table definition.
-     */
-    protected function compileIndexes(TableDefinition $table): array
-    {
-        $indexes = [];
-
-        foreach ($table->indexes as $index) {
-            $name = $index['name'] ?? $this->generateIndexName($table->tableName, $index['columns']);
-            $columns = implode('`, `', $index['columns']);
-            $type = $index['type'] ? " USING {$index['type']}" : '';
-            
-            if ($index['unique']) {
-                $indexes[] = "UNIQUE KEY `{$name}` (`{$columns}`){$type}";
-            } else {
-                $indexes[] = "KEY `{$name}` (`{$columns}`){$type}";
-            }
-        }
-
-        return $indexes;
     }
 
     /**
@@ -219,19 +201,18 @@ class MySqlGrammar implements GrammarInterface
         foreach ($table->columns as $column) {
             foreach ($column->foreignKeys() as $fk) {
                 $name = $fk['name'] ?? $this->generateForeignKeyName($table->tableName, $column->name());
-                
                 [$refTable, $refColumn] = $this->parseReference($fk['references']);
-                
-                $constraint = "CONSTRAINT `{$name}` FOREIGN KEY (`{$column->name()}`) REFERENCES `{$refTable}` (`{$refColumn}`)";
-                
+
+                $constraint = "CONSTRAINT {$this->wrap($name)} FOREIGN KEY ({$this->wrap($column->name())}) REFERENCES {$this->wrap($refTable)} ({$this->wrap($refColumn)})";
+
                 if ($fk['onDelete']) {
                     $constraint .= " ON DELETE {$fk['onDelete']}";
                 }
-                
+
                 if ($fk['onUpdate']) {
                     $constraint .= " ON UPDATE {$fk['onUpdate']}";
                 }
-                
+
                 $constraints[] = $constraint;
             }
         }
@@ -240,19 +221,11 @@ class MySqlGrammar implements GrammarInterface
     }
 
     /**
-     * Generate automatic index name.
-     */
-    protected function generateIndexName(string $table, array $columns): string
-    {
-        return $table . '_' . implode('_', $columns) . '_index';
-    }
-
-    /**
      * Generate automatic foreign key constraint name.
      */
     protected function generateForeignKeyName(string $table, string $column): string
     {
-        return $table . '_' . $column . '_foreign';
+        return "{$table}_{$column}_foreign";
     }
 
     /**
@@ -268,20 +241,14 @@ class MySqlGrammar implements GrammarInterface
     }
 
     /**
-     * Compiles a default value for SQL output.
-     * Handles NULL, Keywords, functions, and string literals.
-     *
-     * @param mixed $value
-     * @return string
+     * Compile default values for SQLite.
      */
     protected function compileDefaultValue(mixed $value): string
     {
-        // handle php null
         if ($value === null) {
             return 'NULL';
         }
 
-        // Handle numbers
         if (is_int($value) || is_float($value)) {
             return (string) $value;
         }
@@ -293,21 +260,25 @@ class MySqlGrammar implements GrammarInterface
         if (is_string($value)) {
             $upper = strtoupper(trim($value));
 
-            // SQL keyword
             if (in_array($upper, $this->sqlKeywords, true)) {
                 return $upper;
             }
 
-            // function call
             if (str_contains($value, '(')) {
                 return $value;
             }
 
-            // escape if its a string literal
             $escaped = str_replace("'", "''", $value);
             return "'{$escaped}'";
         }
 
         return (string) $value;
+    }
+
+    protected function wrap(string $identifier): string
+    {
+        $escaped = str_replace('"', '""', $identifier);
+
+        return "\"{$escaped}\"";
     }
 }

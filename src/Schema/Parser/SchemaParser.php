@@ -2,10 +2,6 @@
 
 namespace Atlas\Schema\Parser;
 
-use Atlas\Database\TypeNormalizerInterface;
-use Atlas\Exceptions\SchemaException;
-use ReflectionClass;
-use ReflectionProperty;
 use Atlas\Attributes\Column;
 use Atlas\Attributes\ForeignKey;
 use Atlas\Attributes\Id;
@@ -15,8 +11,12 @@ use Atlas\Attributes\SoftDeletes;
 use Atlas\Attributes\Table;
 use Atlas\Attributes\Timestamps;
 use Atlas\Attributes\Uuid;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
+use Atlas\Exceptions\SchemaException;
 use Atlas\Schema\Definition\ColumnDefinition;
 use Atlas\Schema\Definition\TableDefinition;
+use ReflectionClass;
+use ReflectionProperty;
 
 class SchemaParser
 {

@@ -2,16 +2,16 @@
 
 namespace Tests\Integration;
 
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
-use PDO;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use Atlas\Database\Drivers\MySqlDriver;
+use Atlas\Database\MySqlTypeNormalizer;
 use Atlas\Example\OrderItemSchema;
 use Atlas\Example\ProductSchema;
 use Atlas\Example\UserSchema;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Schema\Parser\SchemaParser;
+use PDO;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 use Tests\Support\TestDb;
 
 class ComplexSchemaIntegrationTest extends TestCase

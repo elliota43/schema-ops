@@ -2,13 +2,14 @@
 
 namespace Atlas\Schema\Loader;
 
-use Atlas\Database\TypeNormalizerInterface;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
+use Atlas\Exceptions\SchemaException;
+use Atlas\Schema\Definition\TableDefinition;
+use Atlas\Schema\Discovery\ClassFinder;
+use Atlas\Schema\Discovery\YamlSchemaFinder;
 use Atlas\Schema\Parser\SchemaParser;
 use Atlas\Schema\Parser\YamlSchemaParser;
-use Atlas\Schema\Discovery\ClassFinder;
-use Atlas\Schema\Definition\TableDefinition;
-use Atlas\Exceptions\SchemaException;
-use Atlas\Schema\Discovery\YamlSchemaFinder;
+
 class SchemaLoader
 {
     public function __construct(

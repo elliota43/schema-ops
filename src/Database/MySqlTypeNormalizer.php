@@ -1,8 +1,9 @@
 <?php
 
-namespace Atlas\Database\Drivers;
+namespace Atlas\Database;
 
-use Atlas\Database\TypeNormalizerInterface;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
+
 class MySqlTypeNormalizer implements TypeNormalizerInterface
 {
 

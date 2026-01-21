@@ -117,18 +117,28 @@ Shows current schema operations status and configuration.
 use Atlas\Schema\Parser\SchemaParser;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Database\Drivers\MySqlDriver;
+use Atlas\Database\Drivers\PostgresDriver;
+use Atlas\Database\Drivers\SQLiteDriver;
 
 // Parse schema from attributes
 $parser = new SchemaParser();
 $definition = $parser->parse(UserSchema::class);
 
-// Generate SQL
+// Generate SQL (MySQL)
 $grammar = new MySqlGrammar();
 $sql = $grammar->createTable($definition);
 
-// Introspect existing database
+// Introspect existing database (MySQL)
 $driver = new MySqlDriver($pdo);
 $currentSchema = $driver->getCurrentSchema();
+
+// Or use PostgreSQL
+$postgresDriver = new PostgresDriver($postgresPdo);
+$currentSchema = $postgresDriver->getCurrentSchema();
+
+// Or use SQLite
+$sqliteDriver = new SQLiteDriver($sqlitePdo);
+$currentSchema = $sqliteDriver->getCurrentSchema();
 
 // Compare schemas
 $comparator = new TableComparator();
@@ -186,8 +196,8 @@ This design makes it easy to add support for additional databases (PostgreSQL, S
 
 ### Additional Drivers
 
-- [ ] PostgreSQL driver and grammar
-- [ ] SQLite driver and grammar
+- [x] PostgreSQL driver and grammar
+- [x] SQLite driver and grammar
 - [ ] SQL Server driver and grammar
 
 ### Type System
@@ -228,18 +238,40 @@ composer test:integration
 composer test:coverage
 ```
 
-Integration tests require Docker:
+Integration tests require Docker for MySQL and PostgreSQL. SQLite tests use an in-memory database.
 
 ```bash
+# Start databases (MySQL and PostgreSQL)
 docker-compose up -d
+
+# Run all integration tests (MySQL, PostgreSQL, and SQLite)
 ./vendor/bin/phpunit
+
+# Run only MySQL integration tests
+./vendor/bin/phpunit tests/Integration/DatabaseIntrospectionTest.php
+
+# Run only PostgreSQL integration tests
+./vendor/bin/phpunit tests/Integration/PostgresDatabaseIntrospectionTest.php
+
+# Run only SQLite integration tests (no Docker needed)
+./vendor/bin/phpunit tests/Integration/SQLiteDatabaseIntrospectionTest.php
+
+# Stop databases
+docker-compose down
 ```
+
+The docker-compose.yml file includes:
+- **MySQL 8.0** on port 3306 (user: root, password: root, database: test_schema)
+- **PostgreSQL 16** on port 5433 (user: atlas, password: atlas, database: test_schema)
+- **SQLite** uses in-memory database (no Docker container needed)
 
 ## Requirements
 
 - PHP 8.1 or higher
 - PDO extension
 - MySQL 8.0 or higher (for MySQL support)
+- PostgreSQL 12 or higher (for PostgreSQL support)
+- SQLite 3.8 or higher (for SQLite support)
 
 ## License
 

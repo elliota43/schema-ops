@@ -1,6 +1,6 @@
 <?php
 
-namespace Atlas\Database;
+namespace Atlas\Database\Normalizers;
 
 interface TypeNormalizerInterface
 {

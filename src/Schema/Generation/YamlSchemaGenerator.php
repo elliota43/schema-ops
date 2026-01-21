@@ -47,7 +47,7 @@ final class YamlSchemaGenerator
 
         return [
             'version' => 1,
-            'table' => $mapped,
+            'tables' => $mapped,
         ];
     }
 

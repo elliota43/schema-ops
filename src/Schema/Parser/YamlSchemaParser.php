@@ -2,12 +2,13 @@
 
 namespace Atlas\Schema\Parser;
 
-use Atlas\Database\TypeNormalizerInterface;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
 use Atlas\Exceptions\SchemaException;
 use Atlas\Schema\Definition\ColumnDefinition;
 use Atlas\Schema\Definition\TableDefinition;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
+
 final class YamlSchemaParser
 {
     public function __construct(

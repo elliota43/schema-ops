@@ -17,5 +17,10 @@
         <env name="DB_DATABASE" value="test_schema"/>
         <env name="DB_USERNAME" value="root"/>
         <env name="DB_PASSWORD" value="root"/>
+        <env name="POSTGRES_HOST" value="127.0.0.1"/>
+        <env name="POSTGRES_PORT" value="5433"/>
+        <env name="POSTGRES_DATABASE" value="test_schema"/>
+        <env name="POSTGRES_USERNAME" value="atlas"/>
+        <env name="POSTGRES_PASSWORD" value="atlas"/>
     </php>
 </phpunit>

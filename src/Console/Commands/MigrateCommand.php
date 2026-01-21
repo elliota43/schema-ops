@@ -7,11 +7,20 @@ use Atlas\Analysis\MySqlDestructiveChangeAnalyzer;
 use Atlas\Changes\TableChanges;
 use Atlas\Comparison\TableComparator;
 use Atlas\Connection\ConnectionManager;
+use Atlas\Database\Drivers\DriverInterface;
 use Atlas\Database\Drivers\MySqlDriver;
-use Atlas\Schema\Grammars\MySqlGrammar;
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
-use Atlas\Schema\Parser\SchemaParser;
+use Atlas\Database\Drivers\PostgresDriver;
+use Atlas\Database\Drivers\SQLiteDriver;
+use Atlas\Database\MySqlTypeNormalizer;
+use Atlas\Database\Normalizers\PostgresTypeNormalizer;
+use Atlas\Database\Normalizers\SQLiteTypeNormalizer;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
 use Atlas\Schema\Discovery\ClassFinder;
+use Atlas\Schema\Grammars\GrammarInterface;
+use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Grammars\PostgresGrammar;
+use Atlas\Schema\Grammars\SQLiteGrammar;
+use Atlas\Schema\Parser\SchemaParser;
 use PDO;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -263,7 +272,7 @@ class MigrateCommand extends Command
         }
     }
 
-    protected function displaySQL(SymfonyStyle $io, array $changes, MySqlGrammar $grammar): void
+    protected function displaySQL(SymfonyStyle $io, array $changes, GrammarInterface $grammar): void
     {
         $io->section('Generated SQL');
 
@@ -285,14 +294,14 @@ class MigrateCommand extends Command
 
         // Dropped tables
         foreach ($changes['dropped_tables'] as $tableName => $table) {
-            $io->text("DROP TABLE `{$tableName}`;");
+            $io->text($grammar->dropTable($tableName) . ';');
         }
     }
 
-    protected function executeMigration(PDO $pdo, array $changes, MySqlGrammar $grammar, SymfonyStyle $io): void
+    protected function executeMigration(PDO $pdo, array $changes, GrammarInterface $grammar, SymfonyStyle $io): void
     {
-        // Note: MySQL DDL statements auto-commit, so transactions don't work for schema changes
-        // We execute each statement individually
+        // DDL statements auto-commit, so transactions don't work for schema changes.
+        // We execute each statement individually.
 
         // Create new tables
         foreach ($changes['new_tables'] as $table) {
@@ -312,7 +321,7 @@ class MigrateCommand extends Command
 
         // Drop tables
         foreach ($changes['dropped_tables'] as $tableName => $table) {
-            $pdo->exec("DROP TABLE `{$tableName}`");
+            $pdo->exec($grammar->dropTable($tableName));
             $io->text("  ✓ Dropped table `{$tableName}`");
         }
     }
@@ -323,7 +332,7 @@ class MigrateCommand extends Command
     protected function executeInteractiveMigration(
         PDO $pdo,
         array $changes,
-        MySqlGrammar $grammar,
+        GrammarInterface $grammar,
         SymfonyStyle $io,
         InputInterface $input
     ): void {
@@ -340,7 +349,7 @@ class MigrateCommand extends Command
             fn($c) => $c['level'] !== DestructivenessLevel::SAFE
         );
 
-        // Note: MySQL DDL statements auto-commit, so no transactions
+        // DDL statements auto-commit, so transactions are not used.
 
         // Execute safe changes
         if (!empty($safeChanges)) {
@@ -409,7 +418,7 @@ class MigrateCommand extends Command
      * Flatten all changes into a single ordered list of atomic changes with metadata.
      * Order: by table, then by destructiveness within each table.
      */
-    protected function flattenChangesToList(array $changes, MySqlGrammar $grammar): array
+    protected function flattenChangesToList(array $changes, GrammarInterface $grammar): array
     {
         $flattened = [];
 
@@ -508,7 +517,7 @@ class MigrateCommand extends Command
                 'tableName' => $tableName,
                 'level' => DestructivenessLevel::DEFINITELY_DESTRUCTIVE,
                 'description' => "DROP TABLE `{$tableName}`",
-                'sql' => "DROP TABLE `{$tableName}`",
+                'sql' => $grammar->dropTable($tableName),
                 'details' => ['table' => $table],
                 'canPreview' => true,
             ];
@@ -547,7 +556,7 @@ class MigrateCommand extends Command
      * Execute a single change with user prompt.
      * Returns: 'executed', 'skipped', or 'aborted'
      */
-    protected function executeChangeWithPrompt(PDO $pdo, SymfonyStyle $io, array $change, MySqlGrammar $grammar): string
+    protected function executeChangeWithPrompt(PDO $pdo, SymfonyStyle $io, array $change, GrammarInterface $grammar): string
     {
         // Display the change with styling based on destructiveness
         $this->displaySingleChange($io, $change);
@@ -665,7 +674,7 @@ class MigrateCommand extends Command
     /**
      * Show affected data for preview.
      */
-    protected function showAffectedData(PDO $pdo, SymfonyStyle $io, array $change, MySqlGrammar $grammar): void
+    protected function showAffectedData(PDO $pdo, SymfonyStyle $io, array $change, GrammarInterface $grammar): void
     {
         try {
             if ($change['type'] === 'drop_column') {
@@ -714,29 +723,38 @@ class MigrateCommand extends Command
         return $this->createDatabaseConnection();
     }
 
-    protected function getDriver(string $connectionName, PDO $pdo): \Atlas\Database\Drivers\MySqlDriver
+    protected function getDriver(string $connectionName, PDO $pdo): DriverInterface
     {
-        // TODO: Use ConnectionManager to get driver based on connection type
-        return new MySqlDriver($pdo);
+        if ($this->connectionManager) {
+            return $this->connectionManager->getDriver($connectionName);
+        }
+
+        return $this->createDriverFromEnv($pdo);
     }
 
-    protected function getGrammar(string $connectionName): MySqlGrammar
+    protected function getGrammar(string $connectionName): GrammarInterface
     {
-        // TODO: Use ConnectionManager to get grammar based on connection type
-        return new MySqlGrammar();
+        if ($this->connectionManager) {
+            return $this->connectionManager->getGrammar($connectionName);
+        }
+
+        return $this->createGrammarFromEnv();
     }
 
-    protected function getNormalizer(string $connectionName): MySqlTypeNormalizer
+    protected function getNormalizer(string $connectionName): TypeNormalizerInterface
     {
-        // TODO: Use ConnectionManager to get normalizer based on connection type
-        return new MySqlTypeNormalizer();
+        if ($this->connectionManager) {
+            return $this->connectionManager->getNormalizer($connectionName);
+        }
+
+        return $this->createNormalizerFromEnv();
     }
 
     protected function discoverSchemas(
         InputInterface $input,
         SymfonyStyle $io,
         SchemaParser $parser,
-        MySqlTypeNormalizer $normalizer
+        TypeNormalizerInterface $normalizer
     ): array {
         $yamlPath = $input->getOption('yaml-path');
         $phpPath = $input->getOption('path');
@@ -773,7 +791,7 @@ class MigrateCommand extends Command
         return $schemas;
     }
 
-    protected function discoverYamlSchemas(string $path, MySqlTypeNormalizer $normalizer): array
+    protected function discoverYamlSchemas(string $path, TypeNormalizerInterface $normalizer): array
     {
         $yamlParser = new \Atlas\Schema\Parser\YamlSchemaParser($normalizer);
         $finder = new \Atlas\Schema\Discovery\YamlSchemaFinder();
@@ -798,18 +816,78 @@ class MigrateCommand extends Command
 
     protected function createDatabaseConnection(): PDO
     {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-            getenv('DB_HOST') ?: 'localhost',
-            getenv('DB_PORT') ?: '3306',
-            getenv('DB_DATABASE') ?: 'test'
-        );
+        $driver = $this->getEnvDriver();
 
-        return new PDO(
-            $dsn,
-            getenv('DB_USERNAME') ?: 'root',
-            getenv('DB_PASSWORD') ?: '',
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        $dsn = $this->buildDsnFromEnv($driver);
+
+        return new PDO($dsn, getenv('DB_USERNAME') ?: 'root', getenv('DB_PASSWORD') ?: '', [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        ]);
+    }
+
+    protected function createDriverFromEnv(PDO $pdo): DriverInterface
+    {
+        return match ($this->getEnvDriver()) {
+            'pgsql' => new PostgresDriver($pdo),
+            'sqlite' => new SQLiteDriver($pdo),
+            default => new MySqlDriver($pdo),
+        };
+    }
+
+    protected function createGrammarFromEnv(): GrammarInterface
+    {
+        return match ($this->getEnvDriver()) {
+            'pgsql' => new PostgresGrammar(),
+            'sqlite' => new SQLiteGrammar(),
+            default => new MySqlGrammar(),
+        };
+    }
+
+    protected function createNormalizerFromEnv(): TypeNormalizerInterface
+    {
+        return match ($this->getEnvDriver()) {
+            'pgsql' => new PostgresTypeNormalizer(),
+            'sqlite' => new SQLiteTypeNormalizer(),
+            default => new MySqlTypeNormalizer(),
+        };
+    }
+
+    protected function getEnvDriver(): string
+    {
+        return getenv('DB_DRIVER') ?: 'mysql';
+    }
+
+    protected function buildDsnFromEnv(string $driver): string
+    {
+        return match ($driver) {
+            'pgsql' => $this->buildPostgresDsn(),
+            'sqlite' => $this->buildSqliteDsn(),
+            default => $this->buildMySqlDsn(),
+        };
+    }
+
+    protected function buildMySqlDsn(): string
+    {
+        $host = getenv('DB_HOST') ?: 'localhost';
+        $port = getenv('DB_PORT') ?: '3306';
+        $database = getenv('DB_DATABASE') ?: 'test';
+
+        return "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
+    }
+
+    protected function buildPostgresDsn(): string
+    {
+        $host = getenv('DB_HOST') ?: 'localhost';
+        $port = getenv('DB_PORT') ?: '5432';
+        $database = getenv('DB_DATABASE') ?: 'test';
+
+        return "pgsql:host={$host};port={$port};dbname={$database}";
+    }
+
+    protected function buildSqliteDsn(): string
+    {
+        $database = getenv('DB_DATABASE') ?: ':memory:';
+
+        return "sqlite:{$database}";
     }
 }

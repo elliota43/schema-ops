@@ -36,12 +36,29 @@ jobs:
           --health-interval=3s
           --health-timeout=3s
           --health-retries=40
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: atlas
+          POSTGRES_PASSWORD: atlas
+          POSTGRES_DB: test_schema
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd="pg_isready -U atlas -d test_schema"
+          --health-interval=3s
+          --health-timeout=3s
+          --health-retries=40
 
     env:
       DB_DRIVER: mysql
       DB_HOST: 127.0.0.1
       DB_USERNAME: atlas
       DB_PASSWORD: atlas
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_USERNAME: atlas
+      POSTGRES_PASSWORD: atlas
+      POSTGRES_DATABASE: test_schema
       COMPOSER_NO_INTERACTION: "1"
       COMPOSER_PROCESS_TIMEOUT: "1200"
 
@@ -54,7 +71,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
-          extensions: pdo, pdo_mysql
+          extensions: pdo, pdo_mysql, pdo_pgsql, pdo_sqlite
           coverage: none
 
       - name: Show PHP / Composer versions
@@ -73,11 +90,14 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Install MySQL client
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
+      - name: Install database clients
+        run: sudo apt-get update && sudo apt-get install -y mysql-client postgresql-client
 
       - name: Export MySQL port to env
         run: echo "DB_PORT=${{ job.services.mysql.ports['3306'] }}" >> "$GITHUB_ENV"
+
+      - name: Export Postgres port to env
+        run: echo "POSTGRES_PORT=${{ job.services.postgres.ports['5432'] }}" >> "$GITHUB_ENV"
 
       - name: Wait for MySQL to accept connections
         shell: bash
@@ -88,6 +108,17 @@ jobs:
             sleep 1
           done
           echo "MySQL did not become ready in time" >&2
+          exit 1
+
+      - name: Wait for Postgres to accept connections
+        shell: bash
+        run: |
+          echo "Postgres mapped port: $POSTGRES_PORT"
+          for i in {1..60}; do
+            pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USERNAME" -d "$POSTGRES_DATABASE" && exit 0
+            sleep 1
+          done
+          echo "Postgres did not become ready in time" >&2
           exit 1
 
       - name: Create test databases (atlas_test + test_schema) and grant permissions
@@ -110,6 +141,10 @@ jobs:
           echo "DB_PORT=$DB_PORT"
           echo "DB_USERNAME=$DB_USERNAME"
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" -e "SHOW DATABASES;"
+          echo "POSTGRES_HOST=$POSTGRES_HOST"
+          echo "POSTGRES_PORT=$POSTGRES_PORT"
+          echo "POSTGRES_USERNAME=$POSTGRES_USERNAME"
+          psql "postgresql://$POSTGRES_USERNAME:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DATABASE" -c "\\l"
 
       - name: Run unit tests
         if: matrix.suite == 'unit'
@@ -131,6 +166,15 @@ jobs:
           docker logs "${{ job.services.mysql.id }}" || true
           echo "=== Databases ==="
           mysql -h "$DB_HOST" -P "$DB_PORT" -u root -proot -e "SHOW DATABASES;" || true
+
+      - name: Postgres diagnostics on failure
+        if: failure() && matrix.suite == 'integration'
+        shell: bash
+        run: |
+          echo "=== Postgres container logs ==="
+          docker logs "${{ job.services.postgres.id }}" || true
+          echo "=== Databases ==="
+          psql "postgresql://$POSTGRES_USERNAME:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DATABASE" -c "\\l" || true
 
   coverage:
     name: Coverage (PHP 8.3, unit)

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
+use Atlas\Database\MySqlTypeNormalizer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

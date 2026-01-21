@@ -2,14 +2,14 @@
 
 namespace Tests\Unit;
 
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Atlas\Database\MySqlTypeNormalizer;
 use Atlas\Example\OrderItemSchema;
 use Atlas\Example\ProductSchema;
 use Atlas\Example\UserSchema;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Schema\Parser\SchemaParser;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 class AdvancedFeaturesTest extends TestCase
 {

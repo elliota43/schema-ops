@@ -7,11 +7,11 @@ namespace Atlas\Console\Commands;
 use Atlas\Analysis\MySqlDestructiveChangeAnalyzer;
 use Atlas\Comparison\TableComparator;
 use Atlas\Connection\ConnectionManager;
-use Atlas\Database\Drivers\MySqlDriver;
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
+use Atlas\Database\Drivers\DriverInterface;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
 use Atlas\Schema\Discovery\ClassFinder;
 use Atlas\Schema\Discovery\YamlSchemaFinder;
-use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Grammars\GrammarInterface;
 use Atlas\Schema\Parser\SchemaParser;
 use Atlas\Schema\Parser\YamlSchemaParser;
 use Atlas\Support\ProjectRootFinder;
@@ -47,12 +47,11 @@ final class DiffCommand extends Command
 
         try {
             $connectionName = $input->getOption('connection');
-            $pdo = $this->connectionManager->connection($connectionName);
-            $driver = new MySqlDriver($pdo);
-            $normalizer = new MySqlTypeNormalizer();
+            $driver = $this->getDriver($connectionName);
+            $normalizer = $this->getNormalizer($connectionName);
             $parser = new SchemaParser($normalizer);
             $analyzer = new MySqlDestructiveChangeAnalyzer();
-            $grammar = new MySqlGrammar();
+            $grammar = $this->getGrammar($connectionName);
 
             // Discover schemas
             $io->section('Discovering Schemas');
@@ -95,7 +94,7 @@ final class DiffCommand extends Command
         InputInterface $input,
         SymfonyStyle $io,
         SchemaParser $parser,
-        MySqlTypeNormalizer $normalizer
+        TypeNormalizerInterface $normalizer
     ): array {
         $yamlPath = $input->getOption('yaml-path');
         $phpPath = $input->getOption('path');
@@ -138,7 +137,7 @@ final class DiffCommand extends Command
         return $schemas;
     }
 
-    protected function discoverYamlSchemas(string $path, MySqlTypeNormalizer $normalizer): array
+    protected function discoverYamlSchemas(string $path, TypeNormalizerInterface $normalizer): array
     {
         $yamlParser = new YamlSchemaParser($normalizer);
         $finder = new YamlSchemaFinder();
@@ -202,7 +201,7 @@ final class DiffCommand extends Command
             && empty($changes['modified_tables']);
     }
 
-    protected function generateMigrationSql(array $changes, MySqlGrammar $grammar): array
+    protected function generateMigrationSql(array $changes, GrammarInterface $grammar): array
     {
         $sql = [];
 
@@ -219,7 +218,7 @@ final class DiffCommand extends Command
 
         // Dropped tables
         foreach ($changes['dropped_tables'] as $tableName => $table) {
-            $sql[] = "DROP TABLE `{$tableName}`;";
+            $sql[] = $grammar->dropTable($tableName);
         }
 
         return $sql;
@@ -255,5 +254,20 @@ final class DiffCommand extends Command
     {
         $content = implode(";\n", $sql) . ";\n";
         file_put_contents($path, $content);
+    }
+
+    protected function getDriver(string $connectionName): DriverInterface
+    {
+        return $this->connectionManager->getDriver($connectionName);
+    }
+
+    protected function getNormalizer(string $connectionName): TypeNormalizerInterface
+    {
+        return $this->connectionManager->getNormalizer($connectionName);
+    }
+
+    protected function getGrammar(string $connectionName): GrammarInterface
+    {
+        return $this->connectionManager->getGrammar($connectionName);
     }
 }
