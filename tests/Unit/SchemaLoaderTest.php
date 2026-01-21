@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
+use Atlas\Database\MySqlTypeNormalizer;
 use Atlas\Exceptions\SchemaException;
 use Atlas\Schema\Discovery\ClassFinder;
 use Atlas\Schema\Loader\SchemaLoader;

@@ -2,12 +2,13 @@
 
 namespace Atlas\Schema\Parser;
 
-use Atlas\Database\TypeNormalizerInterface;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
 use Atlas\Exceptions\SchemaException;
 use Atlas\Schema\Definition\ColumnDefinition;
 use Atlas\Schema\Definition\TableDefinition;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
+
 final class YamlSchemaParser
 {
     public function __construct(
@@ -322,17 +323,32 @@ final class YamlSchemaParser
             name: $columnName,
             sqlType: $this->normalizer->normalize($this->buildSqlType($type, $columnData)),
             isNullable: (bool) ($columnData['nullable'] ?? false),
-            isAutoIncrement: (bool) ($columnData['autoIncrement'] ?? false),
-            isPrimaryKey: (bool) ($columnData['primaryKey'] ?? false),
+            isAutoIncrement: (bool) $this->getColumnOption($columnData, 'auto_increment', 'autoIncrement'),
+            isPrimaryKey: (bool) $this->getColumnOption($columnData, 'primary', 'primaryKey'),
             defaultValue: $columnData['default'] ?? null,
-            onUpdate: isset($columnData['onUpdate']) ? (string) $columnData['onUpdate'] : null,
+            onUpdate: $this->getColumnOption($columnData, 'on_update', 'onUpdate'),
             isUnique: (bool) ($columnData['unique'] ?? false),
             foreignKeys: $this->parseForeignKeys($tableName, $columnName, $columnData),
         );
     }
 
     /**
+     * Get a column option, supporting both snake_case and camelCase keys.
+     *
+     * @param  array  $columnData  The column's YAML data
+     * @param  string  $snakeKey  The snake_case key
+     * @param  string  $camelKey  The camelCase key
+     * @return mixed The value or null if not found
+     */
+    private function getColumnOption(array $columnData, string $snakeKey, string $camelKey): mixed
+    {
+        return $columnData[$snakeKey] ?? $columnData[$camelKey] ?? null;
+    }
+
+    /**
      * Parse foreign key definitions for a column.
+     *
+     * Supports both singular `foreign_key` format and plural `foreignKeys` array format.
      *
      * @param  string  $tableName  The table name for error messages
      * @param  string  $columnName  The column name for error messages
@@ -342,6 +358,12 @@ final class YamlSchemaParser
      */
     private function parseForeignKeys(string $tableName, string $columnName, array $columnData): array
     {
+        // Support singular foreign_key format (more intuitive for YAML)
+        if (isset($columnData['foreign_key'])) {
+            return [$this->normalizeSingularForeignKey($tableName, $columnName, $columnData['foreign_key'])];
+        }
+
+        // Support plural foreignKeys array format
         if (! isset($columnData['foreignKeys'])) {
             return [];
         }
@@ -361,6 +383,31 @@ final class YamlSchemaParser
         }
 
         return $foreignKeys;
+    }
+
+    /**
+     * Normalize a singular foreign_key definition (table/column format).
+     *
+     * @param  string  $tableName  The table name for error messages
+     * @param  string  $columnName  The column name for error messages
+     * @param  array  $foreignKey  The foreign key data
+     * @return array The normalized foreign key definition
+     */
+    private function normalizeSingularForeignKey(string $tableName, string $columnName, array $foreignKey): array
+    {
+        $refTable = $foreignKey['table'] ?? null;
+        $refColumn = $foreignKey['column'] ?? 'id';
+
+        if (! is_string($refTable) || trim($refTable) === '') {
+            throw SchemaException::foreignKeyReferencesMissing($tableName, $columnName, 0);
+        }
+
+        return [
+            'references' => "{$refTable}.{$refColumn}",
+            'onDelete' => $foreignKey['on_delete'] ?? $foreignKey['onDelete'] ?? null,
+            'onUpdate' => $foreignKey['on_update'] ?? $foreignKey['onUpdate'] ?? null,
+            'name' => $foreignKey['name'] ?? null,
+        ];
     }
 
     /**

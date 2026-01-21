@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit bootstrap="vendor/autoload.php" colors="true">
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Integration">
             <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Console">
+            <directory>tests/Console</directory>
         </testsuite>
     </testsuites>
     <php>
@@ -14,5 +22,10 @@
         <env name="DB_DATABASE" value="test_schema"/>
         <env name="DB_USERNAME" value="root"/>
         <env name="DB_PASSWORD" value="root"/>
+        <env name="POSTGRES_HOST" value="127.0.0.1"/>
+        <env name="POSTGRES_PORT" value="5433"/>
+        <env name="POSTGRES_DATABASE" value="test_schema"/>
+        <env name="POSTGRES_USERNAME" value="atlas"/>
+        <env name="POSTGRES_PASSWORD" value="atlas"/>
     </php>
 </phpunit>

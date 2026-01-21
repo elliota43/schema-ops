@@ -207,6 +207,14 @@ PHP;
             $params[] = 'nullable: true';
         }
 
+        if ($column->isAutoIncrement) {
+            $params[] = 'autoIncrement: true';
+        }
+
+        if ($column->isPrimaryKey) {
+            $params[] = 'primaryKey: true';
+        }
+
         // Default value
         if ($column->defaultValue !== null) {
             $default = $this->formatDefaultValue($column->defaultValue);

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
+use Atlas\Attributes\Column;
+use Atlas\Attributes\Table;
+use Atlas\Database\MySqlTypeNormalizer;
 use Atlas\Exceptions\SchemaException;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Schema\Parser\SchemaParser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Atlas\Attributes\Column;
-use Atlas\Attributes\Table;
 
 // Fixture Classes for Testing
 #[Table(name: 'users')]

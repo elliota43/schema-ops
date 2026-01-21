@@ -2,9 +2,10 @@
 
 namespace Atlas\Database\Drivers;
 
-use PDO;
+use Atlas\Database\MySqlTypeNormalizer;
 use Atlas\Schema\Definition\ColumnDefinition;
 use Atlas\Schema\Definition\TableDefinition;
+use PDO;
 
 class MySqlDriver implements DriverInterface
 {

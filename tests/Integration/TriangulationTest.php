@@ -2,16 +2,16 @@
 
 namespace Tests\Integration;
 
-use Atlas\Database\Drivers\MySqlTypeNormalizer;
-use PDO;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use Atlas\Attributes\Column;
 use Atlas\Attributes\Table;
 use Atlas\Comparison\TableComparator;
 use Atlas\Database\Drivers\MySqlDriver;
+use Atlas\Database\MySqlTypeNormalizer;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Schema\Parser\SchemaParser;
+use PDO;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 use Tests\Support\TestDb;
 
 // Fixture: This matches the Docker DB 'legacy_users' table BUT has one extra column

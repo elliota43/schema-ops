@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Atlas\Connection;
 
-use Atlas\Database\DatabaseDriver;
-use Atlas\Database\MySqlDriver;
+use Atlas\Database\Drivers\MySqlDriver;
+use Atlas\Database\Drivers\PostgresDriver;
+use Atlas\Database\Drivers\SQLiteDriver;
+use Atlas\Database\Drivers\DriverInterface;
 use Atlas\Database\MySqlTypeNormalizer;
-use Atlas\Database\TypeNormalizerInterface;
+use Atlas\Database\Normalizers\PostgresTypeNormalizer;
+use Atlas\Database\Normalizers\SQLiteTypeNormalizer;
+use Atlas\Database\Normalizers\TypeNormalizerInterface;
 use Atlas\Exceptions\ConnectionException;
 use Atlas\Schema\Comparison\SchemaComparator;
 use Atlas\Schema\Discovery\ClassFinder;
 use Atlas\Schema\Grammars\GrammarInterface;
 use Atlas\Schema\Grammars\MySqlGrammar;
+use Atlas\Schema\Grammars\PostgresGrammar;
+use Atlas\Schema\Grammars\SQLiteGrammar;
 use Atlas\Schema\Loader\SchemaLoader;
 use Atlas\Schema\Parser\SchemaParser;
 use Atlas\Schema\Parser\YamlSchemaParser;
@@ -104,7 +110,17 @@ final class ConnectionManager
     /**
      * Create a database driver for the specified connection.
      */
-    protected function createDatabaseDriver(string $connectionName): DatabaseDriver
+    public function getDriver(string $connectionName = 'default'): DriverInterface
+    {
+        return $this->createDatabaseDriver($connectionName);
+    }
+
+    public function getNormalizer(string $connectionName = 'default'): TypeNormalizerInterface
+    {
+        return $this->createTypeNormalizer($connectionName);
+    }
+
+    protected function createDatabaseDriver(string $connectionName): DriverInterface
     {
         $driver = $this->getDriverName($connectionName);
         $pdo = $this->connection($connectionName);
@@ -116,8 +132,8 @@ final class ConnectionManager
     {
         return match ($driver) {
             'mysql' => new MySqlTypeNormalizer(),
-            // 'pgsql' => new PostgresTypeNormalizer(),
-            // 'sqlite' => new SqliteTypeNormalizer(),
+            'pgsql' => new PostgresTypeNormalizer(),
+            'sqlite' => new SQLiteTypeNormalizer(),
             default => throw ConnectionException::invalidConfiguration(
                 $driver,
                 "No type normalizer available for driver: {$driver}"
@@ -125,12 +141,12 @@ final class ConnectionManager
         };
     }
 
-    protected function createDatabaseDriverForDriver(string $driver, PDO $pdo): DatabaseDriver
+    protected function createDatabaseDriverForDriver(string $driver, PDO $pdo): DriverInterface
     {
         return match ($driver) {
             'mysql' => new MySqlDriver($pdo),
-            // 'pgsql' => new PostgresDriver($pdo),
-            // 'sqlite' => new SqliteDriver($pdo),
+            'pgsql' => new PostgresDriver($pdo),
+            'sqlite' => new SQLiteDriver($pdo),
             default => throw ConnectionException::invalidConfiguration(
                 $driver,
                 "No database driver available for: {$driver}"
@@ -142,8 +158,8 @@ final class ConnectionManager
     {
         return match ($driver) {
             'mysql' => new MySqlGrammar(),
-            // 'pgsql' => new PostgresGrammar(),
-            // 'sqlite' => new SqliteGrammar(),
+            'pgsql' => new PostgresGrammar(),
+            'sqlite' => new SQLiteGrammar(),
             default => throw ConnectionException::invalidConfiguration(
                 $driver,
                 "No grammar available for driver: {$driver}"
