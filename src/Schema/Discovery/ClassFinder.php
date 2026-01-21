@@ -31,6 +31,7 @@ class ClassFinder
             }
         }
 
+        sort($classes);
         return $classes;
     }
 

@@ -50,9 +50,7 @@ final class YamlSchemaParser
         foreach ($paths as $path) {
             $definitions = $this->parseFile($path);
 
-            foreach ($definitions as $definition) {
-                $tableName = $definition->name;
-
+            foreach ($definitions as $tableName => $definition) {
                 if (isset($tableLocations[$tableName])) {
                     throw SchemaException::duplicateTableDefinition(
                         $tableName,

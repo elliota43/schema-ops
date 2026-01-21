@@ -29,7 +29,11 @@ class YamlSchemaFinder
         /** @var SplFileInfo $file */
         foreach ($iterator as $file) {
             if ($file->isFile() && $this->matchesPattern($file->getFilename(), $pattern)) {
-                $files[] = $file->getRealPath();
+                $absolutePath = $file->getPathname();
+                
+                if ($absolutePath !== false) {
+                    $files[] = $absolutePath;
+                }
             }
         }
         
@@ -44,9 +48,9 @@ class YamlSchemaFinder
      * @param string $pattern The pattern to check if the file matches.
      * @return bool 
      */
-    private function matchesPattern(string $filename, string $pattern)
+    private function matchesPattern(string $filename, string $pattern): bool
     {
-        $regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/';
+        $regex = '/^' . str_replace('\\*', '.*', preg_quote($pattern, '/')) . '$/';
         return (bool) preg_match($regex, $filename);
     }
 }
