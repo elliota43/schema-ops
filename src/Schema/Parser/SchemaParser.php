@@ -3,9 +3,9 @@
 namespace Atlas\Schema\Parser;
 
 use Atlas\Database\TypeNormalizerInterface;
+use Atlas\Exceptions\SchemaException;
 use ReflectionClass;
 use ReflectionProperty;
-use RuntimeException;
 use Atlas\Attributes\Column;
 use Atlas\Attributes\ForeignKey;
 use Atlas\Attributes\Id;
@@ -43,9 +43,7 @@ class SchemaParser
     protected function reflectClass(string $className): ReflectionClass
     {
         if (! class_exists($className)) {
-            throw new RuntimeException(
-                "Class '{$className}' not found. Make sure it's loaded or autoloadable."
-            );
+            throw SchemaException::classNotFound($className);
         }
 
         return new ReflectionClass($className);
@@ -59,9 +57,7 @@ class SchemaParser
         $attribute = $this->getAttribute($reflection, Table::class);
 
         if (! $attribute) {
-            throw new RuntimeException(
-                "Class '{$reflection->getName()}' is missing the #[Table] attribute."
-            );
+            throw SchemaException::missingTableAttribute($reflection->getName());
         }
 
         return $attribute;

@@ -1,0 +1,34 @@
+version: 1
+tables:
+  users:
+    columns:
+      id:
+        type: bigint
+        unsigned: true
+        primaryKey: true
+        autoIncrement: true
+        nullable: false
+
+      email:
+        type: varchar
+        length: 255
+        unique: true
+        nullable: true
+
+      role_id:
+        type: bigint
+        unsigned: true
+        foreignKeys:
+          - references: roles.id
+            onDelete: CASCADE
+            onUpdate: CASCADE
+            name: null
+
+  primaryKey: [id]
+
+  indexes:
+    - columns: [email]
+      unique: true
+      name: users_email_unique
+      type: BTREE
+      length: null

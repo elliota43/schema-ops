@@ -10,3 +10,6 @@ vendor/
 .phpunit.result.cache
 
 AGENTS.md
+
+.claude/
+.vscode/
