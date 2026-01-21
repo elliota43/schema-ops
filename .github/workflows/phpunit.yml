@@ -28,7 +28,6 @@ jobs:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_USER: atlas
           MYSQL_PASSWORD: atlas
-          # Create one default DB automatically; we'll create others explicitly too.
           MYSQL_DATABASE: atlas_test
         ports:
           - 3306/tcp
@@ -38,18 +37,12 @@ jobs:
           --health-timeout=3s
           --health-retries=40
 
+    # Job-level env: NO expressions referencing job/services here
     env:
-      # Canonical DB vars for your test harness to read
       DB_DRIVER: mysql
       DB_HOST: 127.0.0.1
-      DB_PORT: ${{ job.services.mysql.ports['3306'] }}
       DB_USER: atlas
       DB_PASS: atlas
-
-      # We’ll set DB_NAME per-suite below, but keep defaults sane
-      DB_NAME: atlas_test
-
-      # Make composer less chatty and faster
       COMPOSER_NO_INTERACTION: "1"
       COMPOSER_PROCESS_TIMEOUT: "1200"
 
@@ -70,12 +63,10 @@ jobs:
           php -v
           composer -V
 
-      # Cache composer downloads (faster than caching vendor across OS/PHP changes)
       - name: Cache Composer downloads
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.composer/cache/files
+          path: ~/.composer/cache/files
           key: ${{ runner.os }}-php-${{ matrix.php }}-composer-cache-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-${{ matrix.php }}-composer-cache-
@@ -86,17 +77,20 @@ jobs:
       - name: Install MySQL client
         run: sudo apt-get update && sudo apt-get install -y mysql-client
 
+      # ✅ Set DB_PORT using the services context INSIDE a step
+      - name: Export MySQL port to env
+        run: echo "DB_PORT=${{ job.services.mysql.ports['3306'] }}" >> "$GITHUB_ENV"
+
       - name: Wait for MySQL to accept connections
         shell: bash
         run: |
           echo "MySQL mapped port: $DB_PORT"
           for i in {1..60}; do
-            mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" -u root -proot --silent && break
+            mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" -u root -proot --silent && exit 0
             sleep 1
           done
-
-          # Hard fail if still not up
-          mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" -u root -proot --silent
+          echo "MySQL did not become ready in time" >&2
+          exit 1
 
       - name: Create test databases (atlas_test + test_schema) and grant permissions
         shell: bash
@@ -111,39 +105,33 @@ jobs:
             FLUSH PRIVILEGES;
           "
 
-      - name: Debug connectivity (helpful if something still fails)
+      - name: Debug connectivity
         shell: bash
         run: |
           echo "DB_HOST=$DB_HOST"
           echo "DB_PORT=$DB_PORT"
           echo "DB_USER=$DB_USER"
-          echo "DB_NAME=$DB_NAME"
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASS" -e "SHOW DATABASES;"
 
-      # Choose suite
       - name: Run unit tests
         if: matrix.suite == 'unit'
         run: vendor/bin/phpunit tests/Unit
 
-      - name: Run integration tests (default DB = test_schema)
+      - name: Run integration tests
         if: matrix.suite == 'integration'
         env:
-          # If your integration tests hardcode 'test_schema', this matches them.
-          # If they read DB_NAME, this ensures they hit the expected schema.
+          # If your tests hardcode test_schema, this matches.
+          # If they read env vars, this ensures the intended DB is used.
           DB_NAME: test_schema
         run: vendor/bin/phpunit tests/Integration
 
-      # If failures happen, dump extra MySQL info
       - name: MySQL diagnostics on failure
         if: failure() && matrix.suite == 'integration'
         shell: bash
         run: |
+          echo "=== Docker ps ==="
+          docker ps -a || true
           echo "=== MySQL container logs ==="
-          docker ps -a
           docker logs "${{ job.services.mysql.id }}" || true
-
-          echo "=== MySQL status ==="
-          mysqladmin variables -h "$DB_HOST" -P "$DB_PORT" -u root -proot || true
-
-          echo "=== DB list ==="
+          echo "=== Databases ==="
           mysql -h "$DB_HOST" -P "$DB_PORT" -u root -proot -e "SHOW DATABASES;" || true
