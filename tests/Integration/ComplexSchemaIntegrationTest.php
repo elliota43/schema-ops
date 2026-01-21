@@ -12,6 +12,7 @@ use Atlas\Example\ProductSchema;
 use Atlas\Example\UserSchema;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Schema\Parser\SchemaParser;
+use Tests\Support\TestDb;
 
 class ComplexSchemaIntegrationTest extends TestCase
 {
@@ -22,12 +23,7 @@ class ComplexSchemaIntegrationTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->pdo = new PDO(
-            'mysql:host=127.0.0.1;port=3306;dbname=test_schema',
-            'root',
-            'root'
-        );
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->pdo = TestDb::pdo();
 
         $this->driver = new MySqlDriver($this->pdo);
         $this->parser = new SchemaParser(new MySqlTypeNormalizer());

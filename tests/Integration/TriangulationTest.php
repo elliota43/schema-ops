@@ -12,6 +12,7 @@ use Atlas\Comparison\TableComparator;
 use Atlas\Database\Drivers\MySqlDriver;
 use Atlas\Schema\Grammars\MySqlGrammar;
 use Atlas\Schema\Parser\SchemaParser;
+use Tests\Support\TestDb;
 
 // Fixture: This matches the Docker DB 'legacy_users' table BUT has one extra column
 #[Table(name: 'legacy_users')]
@@ -46,11 +47,20 @@ class TriangulationTest extends TestCase
 
     protected function setUp(): void
     {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-            getenv('DB_HOST'), getenv('DB_PORT'), getenv('DB_DATABASE')
-        );
-        $this->pdo = new PDO($dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
+        $this->pdo = TestDb::pdo();
+
+        // Create legacy_users table for triangulation test
+        $this->pdo->exec("DROP TABLE IF EXISTS legacy_users");
+        $this->pdo->exec("
+            CREATE TABLE legacy_users (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                email VARCHAR(255) NOT NULL,
+                full_name VARCHAR(100),
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                bio TEXT
+            ) ENGINE=InnoDB
+        ");
     }
 
     #[Test]

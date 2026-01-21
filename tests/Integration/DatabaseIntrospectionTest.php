@@ -6,6 +6,7 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Atlas\Database\Drivers\MySqlDriver;
+use Tests\Support\TestDb;
 
 class DatabaseIntrospectionTest extends TestCase
 {
@@ -14,16 +15,21 @@ class DatabaseIntrospectionTest extends TestCase
 
     protected function setUp(): void
     {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-            getenv('DB_HOST'), getenv('DB_PORT'), getenv('DB_DATABASE')
-        );
-
-        $this->pdo = new PDO($dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'), [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-        ]);
-
+        $this->pdo = TestDb::pdo();
         $this->driver = new MySqlDriver($this->pdo);
+
+        // Create legacy_users table for introspection tests
+        $this->pdo->exec("DROP TABLE IF EXISTS legacy_users");
+        $this->pdo->exec("
+            CREATE TABLE legacy_users (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                email VARCHAR(255) NOT NULL,
+                full_name VARCHAR(100),
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                bio TEXT
+            ) ENGINE=InnoDB
+        ");
     }
 
     protected function tearDown(): void
@@ -34,6 +40,7 @@ class DatabaseIntrospectionTest extends TestCase
         $this->pdo->exec('DROP TABLE IF EXISTS users_fk');
         $this->pdo->exec('DROP TABLE IF EXISTS roles');
         $this->pdo->exec('DROP TABLE IF EXISTS test_indexes');
+        $this->pdo->exec('DROP TABLE IF EXISTS legacy_users');
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
     }
 
